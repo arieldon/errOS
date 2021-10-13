@@ -17,6 +17,7 @@ start:
 	mov	si, msgrm
 	call	bios_print
 
+	call	load_A20
 	call	load_disk
 
 	hlt			; Wait until next interrupt.
@@ -29,6 +30,16 @@ bios_print:
 	mov	ah, 0x0e	; Enable BIOS teletype mode.
 	int	0x10
 	jmp	bios_print
+.exit:	ret
+
+
+load_A20:
+	mov	ax, 0x2401	; Ask BIOS to enable A20 gate.
+	int	0x15
+	jnc	.exit
+	mov	si, A20err	; Output message and halt upon error.
+	call	bios_print
+	hlt
 .exit:	ret
 
 
@@ -47,8 +58,7 @@ load_disk:
 	int	0x13
 	jnc	.exit		; BIOS sets carry flag upon error.
 
-	;; Handle error.
-	mov	si, diskerr
+	mov	si, diskerr	; Upon error, output message and stop.
 	call	bios_print
 	hlt
 .exit:	ret
@@ -58,6 +68,7 @@ load_disk:
 disk	db	0
 msgrm	db	"Enter real mode.", 0x0d, 0x0a, 0x00
 diskerr	db	"Unable to load disk.", 0x0d, 0x0a, 0x00
+A20err	db	"Unable to enable A20.", 0x0d, 0x0a, 0x00
 
 	;; Pad remaining bits of boot sector and mark it bootable.
 	times	510 - ($ - $$) db 0
