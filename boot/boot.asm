@@ -140,3 +140,43 @@ enter_pm:
 	mov	gs, ax
 
 	hlt
+
+
+clear_cursor:
+	mov	dx, 0x3d4
+	mov	al, 0x0a
+	out	dx, al
+	inc	dx
+	mov	al, 0x20
+	out	dx, al
+	ret
+
+
+clear_screen:
+	mov	edx, vgamem
+	xor	ax, ax
+
+.fill:	mov	[edx], ax
+	add	edx, 2
+	cmp	edx, vgamem + 80 * 25 * 2
+	jl	.fill
+
+	call	clear_cursor
+	ret
+
+
+pm_print:
+	mov	edx, vgamem
+	mov	ah, 0x0f
+
+.print:	lodsb
+	or	al, al
+	jz	.exit
+	mov	[edx], ax
+	add	edx, 2
+	jmp	.print
+.exit:	ret
+
+
+msgpm	db	"Enter protected mode.", 0x00
+vgamem	equ	0xb8000
