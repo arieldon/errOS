@@ -46,7 +46,7 @@ load_A20:
 
 
 load_disk:
-	mov	bx, 0x7c00 + 512; Load address 512MB after start of bootloader.
+	mov	bx, kernel	; Load address of kernel offset.
 	mov	ah, 0x02	; Select BIOS read sector function.
 	mov	al, 15		; Set number of sectors to read.
 
@@ -76,7 +76,7 @@ load_pm:
 	or	eax, 1
 	mov	cr0, eax
 
-	jmp	0x08:enter_pm	; `enter_pm` exists ins econd stage bootloader.
+	jmp	0x08:enter_pm
 
 
 gdt:
@@ -118,18 +118,6 @@ gdt:
 	dd	gdt
 
 
-	;; Declare and define variables.
-disk	db	0
-msgrm	db	"Enter real mode.", 0x0d, 0x0a, 0x00
-diskerr	db	"Unable to load disk.", 0x0d, 0x0a, 0x00
-A20err	db	"Unable to enable A20.", 0x0d, 0x0a, 0x00
-
-
-	;; Pad remaining bits of boot sector and mark it bootable.
-	times	510 - ($ - $$) db 0
-	dw	0xaa55
-
-
 	[bits 32]
 enter_pm:
 	mov	ax, 0x10	; Set data segments to data selector from
@@ -139,6 +127,14 @@ enter_pm:
 	mov	fs, ax
 	mov	gs, ax
 
+	mov	ebp, 0x90000	; Update stack position.
+	mov	esp, ebp
+
+	call	clear_screen
+	mov	esi, msgpm
+	call	pm_print
+
+	jmp	kernel		; Jump to kernel located at 0x1000.
 	hlt
 
 
@@ -156,6 +152,8 @@ clear_screen:
 	mov	edx, vgamem
 	xor	ax, ax
 
+	;; Iterate through each block that represents VGA and set it to black
+	;; directly in memory.
 .fill:	mov	[edx], ax
 	add	edx, 2
 	cmp	edx, vgamem + 80 * 25 * 2
@@ -178,5 +176,16 @@ pm_print:
 .exit:	ret
 
 
+	;; Declare and define variables.
+disk	db	0
+A20err	db	"Unable to enable A20.", 0x0d, 0x0a, 0x00
+diskerr	db	"Unable to load disk.", 0x0d, 0x0a, 0x00
 msgpm	db	"Enter protected mode.", 0x00
+msgrm	db	"Enter real mode.", 0x0d, 0x0a, 0x00
 vgamem	equ	0xb8000
+kernel	equ	0x1000
+
+
+	;; Pad remaining bits of boot sector and mark it bootable.
+	times	510 - ($ - $$) db 0
+	dw	0xaa55
