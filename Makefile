@@ -3,17 +3,12 @@ TARGET := i686-elf
 CC := $(TARGET)-gcc
 LD := $(TARGET)-ld
 ASM := nasm
-WARNINGS := -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
-            -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations \
-            -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
-            -Wconversion -Wstrict-prototypes
-CFLAGS := -std=gnu99 -ffreestanding $(WARNINGS)
+CFLAGS := -std=gnu99 -ffreestanding -Wall -Wextra
 BUILDDIR := ./build
 
 
 boot: $(BUILDDIR)/os.bin
-	qemu-system-x86_64 \
-		-cpu qemu32 \
+	qemu-system-i386 \
 		-accel tcg,thread=single \
 		-m 128 \
 		-no-reboot \
