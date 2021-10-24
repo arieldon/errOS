@@ -7,6 +7,26 @@
 #define BLACK	 0
 #define WHITE	15
 
+uint8_t
+inb(uint16_t port)
+{
+	/* Read a single byte from the specified hardware I/O port. */
+	uint8_t ret;
+	asm volatile("inb %1, %0"
+		: "=a"(ret)
+		: "Nd"(port));
+	return ret;
+}
+
+void
+outb(uint16_t port, uint8_t val)
+{
+	/* Write a designated single byte to the specified hardware I/O port. */
+	asm volatile("outb %0, %1"
+		:
+		: "a"(val), "Nd"(port));
+}
+
 void
 clear(void)
 {
