@@ -21,11 +21,14 @@ boot: $(BUILDDIR)/os.bin
 $(BUILDDIR)/os.bin: $(BUILDDIR)/boot.bin $(BUILDDIR)/kernel.bin
 	cat $^ > $@
 
-$(BUILDDIR)/kernel.bin: $(BUILDDIR)/enter_kernel.o $(BUILDDIR)/init.o
+$(BUILDDIR)/kernel.bin: $(BUILDDIR)/enter_kernel.o $(BUILDDIR)/init.o $(BUILDDIR)/interrupt.o
 	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
 
-$(BUILDDIR)/init.o: kernel/init.c
+$(BUILDDIR)/init.o: kernel/init.c $(BUILDDIR)/interrupt.o
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILDDIR)/interrupt.o: kernel/interrupt.asm
+	$(ASM) -f elf $< -o $@
 
 $(BUILDDIR)/enter_kernel.o: boot/enter_kernel.asm
 	$(ASM) -f elf $< -o $@
