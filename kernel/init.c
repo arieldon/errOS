@@ -7,12 +7,14 @@
 #define BLACK	 0
 #define WHITE	15
 
-#define PIC_MASTER_BASE_ADDR	0x20
-#define PIC_SLAVE_BASE_ADDR	0xa0
-#define PIC_MASTER_COMMAND_PORT	PIC_MASTER_BASE_ADDR
-#define PIC_MASTER_DATA_PORT	(PIC_MASTER_BASE_ADDR + 1)
-#define PIC_SLAVE_COMMAND_PORT	PIC_SLAVE_BASE_ADDR
-#define PIC_SLAVE_DATA_PORT	(PIC_SLAVE_BASE_ADDR + 1)
+enum PIC {
+	PIC_MASTER_COMMAND_PORT = 0x20,
+	PIC_MASTER_DATA_PORT = 0x21,
+	PIC_SLAVE_COMMAND_PORT = 0xa0,
+	PIC_SLAVE_DATA_PORT = 0xa1,
+	PIC_ICW1_INIT = 0x10,
+};
+
 
 extern void isr0();
 extern void isr1();
@@ -79,9 +81,21 @@ set_intr_gate(uint8_t intr_gate, uint32_t service)
 void
 init_idt(void)
 {
-	/* Write to PIC to reset it. */
-	outb(PIC_MASTER_COMMAND_PORT, 0x11);
-	outb(PIC_SLAVE_COMMAND_PORT, 0x11);
+	/*
+	 * Instantiate PIC for protected mode instead of real mode with a series
+	 * of initialization control words.
+	 *
+	 * 1. Send initialization signal to master and slave PICs, respectively.
+	 * 2. Map base address of IRQs in IDT for each PIC. Master PIC handles
+	 *    IRQs 32 to 39; slave PIC handles IRQs 40 to 47, both inclusive.
+	 *    IRQs 0 to 31 are reserved.
+	 * 3. Notify each PIC of the IRQ line it must use to communicate with
+	 *    the other. In this case, PICs are directed to communicate over
+	 *    IRQ line 2. For the master PIC, the second bit is set, 0100, to
+	 *    indicate this line.
+	 */
+	outb(PIC_MASTER_COMMAND_PORT, PIC_ICW1_INIT);
+	outb(PIC_SLAVE_COMMAND_PORT, PIC_ICW1_INIT);
 
 	outb(PIC_MASTER_DATA_PORT, 0x20);
 	outb(PIC_SLAVE_DATA_PORT, 0x28);
@@ -89,12 +103,7 @@ init_idt(void)
 	outb(PIC_MASTER_DATA_PORT, 0x04);
 	outb(PIC_SLAVE_DATA_PORT, 0x02);
 
-	outb(PIC_MASTER_DATA_PORT, 0x00);
-	outb(PIC_SLAVE_DATA_PORT, 0x00);
-
-	outb(PIC_MASTER_DATA_PORT, 0x00);
-	outb(PIC_SLAVE_DATA_PORT, 0x00);
-
+	/* Set IA-32 reserved interrupt responses. */
 	set_intr_gate(0, (uint32_t)isr0);
 	set_intr_gate(1, (uint32_t)isr1);
 	set_intr_gate(2, (uint32_t)isr2);
@@ -182,6 +191,11 @@ handle_isr(void)
 {
 	clear();
 	print("INTERRUPT.");
+
+	/* Issue end-of-interrupt (EOI) command to PIC. */
+	outb(PIC_MASTER_COMMAND_PORT, 0x20);
+	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
+
 	asm("hlt");
 }
 
