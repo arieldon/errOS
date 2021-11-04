@@ -1,11 +1,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define VGA_WIDTH	80
-#define VGA_HEIGHT	25
-
-#define BLACK	 0
-#define WHITE	15
+enum VGA {
+	VGA_MEMORY_START = 0xb8000,
+	VGA_SCREEN_WIDTH = 80,
+	VGA_SCREEN_HEIGHT = 25,
+	VGA_COLOR_BLACK = 0,
+	VGA_COLOR_WHITE = 15,
+};
 
 enum PIC {
 	PIC_MASTER_COMMAND_PORT = 0x20,
@@ -14,7 +16,6 @@ enum PIC {
 	PIC_SLAVE_DATA_PORT = 0xa1,
 	PIC_ICW1_INIT = 0x10,
 };
-
 
 extern void isr0();
 extern void isr1();
@@ -213,10 +214,11 @@ outb(uint16_t port, uint8_t val)
 void
 clear(void)
 {
-	uint16_t *vgamem = (uint16_t *)0xb8000;
-	for (size_t row = 0; row < VGA_HEIGHT; ++row) {
-		for (size_t col = 0; col < VGA_WIDTH; ++col) {
-			vgamem[row * VGA_WIDTH + col] = ' ' | (uint16_t) BLACK << 8;
+	uint16_t *vgamem = (uint16_t *)VGA_MEMORY_START;
+	for (size_t row = 0; row < VGA_SCREEN_HEIGHT; ++row) {
+		for (size_t col = 0; col < VGA_SCREEN_WIDTH; ++col) {
+			vgamem[row * VGA_SCREEN_WIDTH + col] = ' ' |
+				(uint16_t) VGA_COLOR_BLACK << 8;
 		}
 	}
 }
@@ -224,9 +226,9 @@ clear(void)
 void
 print(char *str)
 {
-	uint16_t *vgamem = (uint16_t *)0xb8000;
+	uint16_t *vgamem = (uint16_t *)VGA_MEMORY_START;
 	for (size_t i = 0; str[i] != '\0'; ++i) {
-		vgamem[i] = str[i] | (uint16_t) WHITE << 8;
+		vgamem[i] = str[i] | (uint16_t) VGA_COLOR_WHITE << 8;
 	}
 }
 
