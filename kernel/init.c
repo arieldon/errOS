@@ -17,6 +17,10 @@ enum PIC {
 	PIC_ICW1_INIT = 0x10,
 };
 
+enum KEYBOARD {
+	KEYBOARD_INPUT_PORT = 0x60,
+};
+
 extern void isr0();
 extern void isr1();
 extern void isr2();
@@ -233,6 +237,19 @@ print(char *str)
 }
 
 void
+print_char(char c)
+{
+	static uint16_t *vgaloc = (uint16_t *)VGA_MEMORY_START;
+
+	if (vgaloc == (uint16_t *)VGA_MEMORY_START) {
+		clear();
+	}
+
+	*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
+	++vgaloc;
+}
+
+void
 ack_intr(int n)
 {
 	char s[] = "INTERRUPT 0000";
@@ -251,22 +268,23 @@ handle_isr(struct register_state state)
 	/* Issue end-of-interrupt (EOI) command to PIC. */
 	outb(PIC_MASTER_COMMAND_PORT, 0x20);
 	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
-
-	asm("hlt");
 }
 
 void
 handle_irq(struct register_state state)
 {
-	clear();
-	ack_intr(state.intr_gate);
-
-	/* TODO Handle custom interrupt request. */
+	switch (state.intr_gate) {
+	case 0x20:
+		break;
+	case 0x21:
+		print_char(inb(KEYBOARD_INPUT_PORT));
+		break;
+	default:
+		break;
+	}
 
 	outb(PIC_MASTER_COMMAND_PORT, 0x20);
 	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
-
-	asm("hlt");
 }
 
 void
