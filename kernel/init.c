@@ -15,6 +15,7 @@ enum PIC {
 	PIC_SLAVE_COMMAND_PORT = 0xa0,
 	PIC_SLAVE_DATA_PORT = 0xa1,
 	PIC_ICW1_INIT = 0x10,
+	PIC_EOI = 0x20,
 };
 
 enum KEYBOARD {
@@ -98,6 +99,19 @@ struct intr_gate {
 
 struct intr_gate idt[256];
 struct idt_ptr idt_desc;
+
+void
+issue_pic_eoi(uint8_t intr_gate)
+{
+	/*
+	 * Only issue end-of-interrupt signal to slave PIC if it handled the
+	 * IRQ. Always issue end-of-interrupt to master PIC.
+	 */
+	if (intr_gate > 0x28) {
+		outb(PIC_SLAVE_COMMAND_PORT, PIC_EOI);
+	}
+	outb(PIC_MASTER_COMMAND_PORT, PIC_EOI);
+}
 
 void
 set_intr_gate(uint8_t intr_gate, uint32_t service)
@@ -264,10 +278,7 @@ handle_isr(struct register_state state)
 {
 	clear();
 	ack_intr(state.intr_gate);
-
-	/* Issue end-of-interrupt (EOI) command to PIC. */
-	outb(PIC_MASTER_COMMAND_PORT, 0x20);
-	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
+	issue_pic_eoi(state.intr_gate);
 }
 
 void
@@ -282,9 +293,7 @@ handle_irq(struct register_state state)
 	default:
 		break;
 	}
-
-	outb(PIC_MASTER_COMMAND_PORT, 0x20);
-	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
+	issue_pic_eoi(state.intr_gate);
 }
 
 void
