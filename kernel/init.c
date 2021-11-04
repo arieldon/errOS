@@ -49,8 +49,34 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 
+extern void irq0();
+extern void irq1();
+extern void irq2();
+extern void irq3();
+extern void irq4();
+extern void irq5();
+extern void irq6();
+extern void irq7();
+extern void irq8();
+extern void irq9();
+extern void irq10();
+extern void irq11();
+extern void irq12();
+extern void irq13();
+extern void irq14();
+extern void irq15();
+
 uint8_t inb(uint16_t port);
 void outb(uint16_t port, uint8_t val);
+
+struct register_state {
+	uint32_t ds;
+	/* These registers are pushed by instruction `pusha`. */
+	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+	uint32_t intr_gate, err;
+	/* The following are pushed by CPU upon interrupt. */
+	uint32_t eip, cs, eflags, useresp, ss;
+};
 
 struct idt_ptr {
 	uint16_t limit;
@@ -137,13 +163,31 @@ init_idt(void)
 	set_intr_gate(30, (uint32_t)isr30);
 	set_intr_gate(31, (uint32_t)isr31);
 
+	/* Set responses to custom interrupt requests. */
+	set_intr_gate(32, (uint32_t)irq0);
+	set_intr_gate(33, (uint32_t)irq1);
+	set_intr_gate(34, (uint32_t)irq2);
+	set_intr_gate(35, (uint32_t)irq3);
+	set_intr_gate(36, (uint32_t)irq4);
+	set_intr_gate(37, (uint32_t)irq5);
+	set_intr_gate(38, (uint32_t)irq6);
+	set_intr_gate(39, (uint32_t)irq7);
+	set_intr_gate(40, (uint32_t)irq8);
+	set_intr_gate(41, (uint32_t)irq9);
+	set_intr_gate(42, (uint32_t)irq10);
+	set_intr_gate(43, (uint32_t)irq11);
+	set_intr_gate(44, (uint32_t)irq12);
+	set_intr_gate(45, (uint32_t)irq13);
+	set_intr_gate(46, (uint32_t)irq14);
+	set_intr_gate(47, (uint32_t)irq15);
+
 	idt_desc.limit = (sizeof(struct intr_gate) * 256) - 1;
 	idt_desc.base = (uint32_t)&idt;
 
-	asm("lidt %0"
+	asm("lidt %0"			/* Load address of IDT to register. */
 		:
 		: "m" (idt_desc));	/* Allow a memory address. */
-	asm("sti");
+	asm("sti");			/* Enable interrupts. */
 }
 
 uint8_t
@@ -187,12 +231,36 @@ print(char *str)
 }
 
 void
-handle_isr(void)
+ack_intr(int n)
+{
+	char s[] = "INTERRUPT 0000";
+	for (int i = 13; i > 9; --i, n /= 10) {
+		s[i] = ((char)(n % 10)) + 48;
+	}
+	print(s);
+}
+
+void
+handle_isr(struct register_state state)
 {
 	clear();
-	print("INTERRUPT.");
+	ack_intr(state.intr_gate);
 
 	/* Issue end-of-interrupt (EOI) command to PIC. */
+	outb(PIC_MASTER_COMMAND_PORT, 0x20);
+	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
+
+	asm("hlt");
+}
+
+void
+handle_irq(struct register_state state)
+{
+	clear();
+	ack_intr(state.intr_gate);
+
+	/* TODO Handle custom interrupt request. */
+
 	outb(PIC_MASTER_COMMAND_PORT, 0x20);
 	outb(PIC_SLAVE_COMMAND_PORT, 0x20);
 
@@ -203,7 +271,7 @@ void
 main(void)
 {
 	clear();
-	print("Enter kernel land.");
 	init_idt();
+	print("Enter kernel land.");
 	for (;;) {}
 }

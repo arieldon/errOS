@@ -17,6 +17,16 @@ isr%1:
 %endmacro
 
 
+%macro	IRQ 1
+	global	irq%1
+irq%1:
+	cli
+	push	%1
+	push	32 + %1
+	jmp	irq_common_stub
+%endmacro
+
+
 	[extern	handle_isr]
 isr_common_stub:
 	pusha			; Save current state of registers.
@@ -40,6 +50,32 @@ isr_common_stub:
 	popa			; Restore state of registers.
 	add	esp, 8		; Restore state of stack.
 	sti			; Enable more interrupts.
+	iret
+
+
+	[extern	handle_irq]
+irq_common_stub:
+	pusha
+	mov	ax, ds
+	push	eax
+
+	mov	ax, 0x10
+	mov	ds, ax
+	mov	es, ax
+	mov	fs, ax
+	mov	gs, ax
+
+	call	handle_irq
+
+	pop	eax
+	mov	ax, ds
+	mov	ax, es
+	mov	ax, fs
+	mov	ax, gs
+
+	popa
+	add	esp, 8
+	sti
 	iret
 
 
@@ -75,3 +111,20 @@ ISR_NOERR	28
 ISR_NOERR	29
 ISR_ERR	30
 ISR_NOERR	31
+
+IRQ		0
+IRQ		1
+IRQ		2
+IRQ		3
+IRQ		4
+IRQ		5
+IRQ		6
+IRQ		7
+IRQ		8
+IRQ		9
+IRQ		10
+IRQ		11
+IRQ		12
+IRQ		13
+IRQ		14
+IRQ		15
