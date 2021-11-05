@@ -250,6 +250,7 @@ print(char *str)
 	}
 }
 
+static int bksp = 0;
 void
 print_char(char c)
 {
@@ -259,8 +260,13 @@ print_char(char c)
 		clear();
 	}
 
-	*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
-	++vgaloc;
+	if (bksp && (vgaloc > (uint16_t *)VGA_MEMORY_START)) {
+		--vgaloc;
+		*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
+	} else {
+		*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
+		++vgaloc;
+	}
 }
 
 void
@@ -429,6 +435,11 @@ write_kbd_input(uint8_t c)
 		break;
 	case 0x35:
 		print_char('/');
+		break;
+	case 0x0e:
+		bksp = 1;
+		print_char(' ');
+		bksp = 0;
 		break;
 	default:
 		break;
