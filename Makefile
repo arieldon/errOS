@@ -1,10 +1,14 @@
 PATH := ./toolchain/bin/:$(PATH)
+
 TARGET := i686-elf
 CC := $(TARGET)-gcc
 LD := $(TARGET)-ld
 ASM := nasm
 CFLAGS := -std=gnu99 -ffreestanding -Wall -Wextra
+
 BUILDDIR := ./build
+CSOURCES := $(wildcard ./kernel/*.c)
+COBJECTS := $(subst ./kernel, $(BUILDDIR), $(CSOURCES:.c=.o))
 
 
 boot: $(BUILDDIR)/os.bin
@@ -21,23 +25,20 @@ boot: $(BUILDDIR)/os.bin
 $(BUILDDIR)/os.bin: $(BUILDDIR)/boot.bin $(BUILDDIR)/kernel.bin
 	cat $^ > $@
 
-$(BUILDDIR)/kernel.bin: $(BUILDDIR)/enter_kernel.o $(BUILDDIR)/init.o $(BUILDDIR)/interrupt.o
-	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
+$(BUILDDIR)/kernel.bin: $(BUILDDIR)/enter_kernel.o $(BUILDDIR)/intr.o $(COBJECTS)
+	$(LD) -e 0x1000 -o $@ -Ttext 0x1000 $^ --oformat binary
 
-$(BUILDDIR)/init.o: kernel/init.c $(BUILDDIR)/interrupt.o
+$(BUILDDIR)/%.o: kernel/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILDDIR)/interrupt.o: kernel/interrupt.asm
-	$(ASM) -f elf $< -o $@
+$(BUILDDIR)/intr.o: kernel/intr.asm
+	$(ASM) $< -f elf -o $@
 
 $(BUILDDIR)/enter_kernel.o: boot/enter_kernel.asm
-	$(ASM) -f elf $< -o $@
+	$(ASM) $< -f elf -o $@
 
-$(BUILDDIR)/boot.bin: boot/boot.asm $(BUILDDIR)
-	$(ASM) -f bin $< -o $@
-
-$(BUILDDIR):
-	mkdir $(BUILDDIR)
+$(BUILDDIR)/boot.bin: boot/boot.asm
+	$(ASM) $< -f bin -o $@
 
 clean:
 	rm -rf build/*
