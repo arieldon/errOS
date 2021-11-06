@@ -151,7 +151,7 @@ write_kbd_input(uint8_t c)
 		break;
 	case 0x0e:
 		bksp = 1;
-		print_char(' ');
+		print_char('\0');
 		bksp = 0;
 		break;
 	default:

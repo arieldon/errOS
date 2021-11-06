@@ -32,9 +32,9 @@ print_char(char c)
 		clear();
 	}
 
-	if (bksp && (vgaloc > (uint16_t *)VGA_MEMORY_START)) {
-		--vgaloc;
-		*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
+	if (bksp) {
+		vgaloc -= (vgaloc > (uint16_t *)VGA_MEMORY_START);
+		*vgaloc = c | (uint16_t) VGA_COLOR_BLACK << 8;
 	} else {
 		*vgaloc = c | (uint16_t) VGA_COLOR_WHITE << 8;
 		++vgaloc;
