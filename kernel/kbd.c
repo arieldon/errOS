@@ -1,160 +1,181 @@
 #include "kbd.h"
 
+static int shift_mod;
+
 void
-write_kbd_input(uint8_t c)
+write_kbd_input(uint8_t scan_code)
 {
+	char c;
+	int char_input = 1;
+
 	/* Use XT scan code set. */
-	switch (c) {
+	switch (scan_code) {
+	case 0x2a:	/* Detect left shift key press. */
+	case 0x36:	/* Detect right shift key press. */
+		char_input = 0;
+		shift_mod = 1;
+		break;
+	case 0xaa:	/* Detect left shift release. */
+	case 0xb6:	/* Detect right shift release. */
+		char_input = 0;
+		shift_mod = 0;
+		break;
 	case 0x1e:
-		print_char('A');
+		c = 'a';
 		break;
 	case 0x30:
-		print_char('B');
+		c = 'b';
 		break;
 	case 0x2e:
-		print_char('C');
+		c = 'c';
 		break;
 	case 0x20:
-		print_char('D');
+		c = 'd';
 		break;
 	case 0x12:
-		print_char('E');
+		c = 'e';
 		break;
 	case 0x21:
-		print_char('F');
+		c = 'f';
 		break;
 	case 0x22:
-		print_char('G');
+		c = 'g';
 		break;
 	case 0x23:
-		print_char('H');
+		c = 'h';
 		break;
 	case 0x17:
-		print_char('I');
+		c = 'i';
 		break;
 	case 0x24:
-		print_char('J');
+		c = 'j';
 		break;
 	case 0x25:
-		print_char('K');
+		c = 'k';
 		break;
 	case 0x26:
-		print_char('L');
+		c = 'l';
 		break;
 	case 0x32:
-		print_char('M');
+		c = 'm';
 		break;
 	case 0x31:
-		print_char('N');
+		c = 'n';
 		break;
 	case 0x18:
-		print_char('O');
+		c = 'o';
 		break;
 	case 0x19:
-		print_char('P');
+		c = 'p';
 		break;
 	case 0x10:
-		print_char('Q');
+		c = 'q';
 		break;
 	case 0x13:
-		print_char('R');
+		c = 'r';
 		break;
 	case 0x1f:
-		print_char('S');
+		c = 's';
 		break;
 	case 0x14:
-		print_char('T');
+		c = 't';
 		break;
 	case 0x16:
-		print_char('U');
+		c = 'u';
 		break;
 	case 0x2f:
-		print_char('V');
+		c = 'v';
 		break;
 	case 0x11:
-		print_char('W');
+		c = 'w';
 		break;
 	case 0x2d:
-		print_char('X');
+		c = 'x';
 		break;
 	case 0x15:
-		print_char('Y');
+		c = 'y';
 		break;
 	case 0x2c:
-		print_char('Z');
+		c = 'z';
 		break;
 	case 0x0b:
-		print_char('0');
+		c = shift_mod ? ')' : '0';
 		break;
 	case 0x02:
-		print_char('1');
+		c = shift_mod ? '!' : '1';
 		break;
 	case 0x03:
-		print_char('2');
+		c = shift_mod ? '@' : '2';
 		break;
 	case 0x04:
-		print_char('3');
+		c = shift_mod ? '#' : '3';
 		break;
 	case 0x05:
-		print_char('4');
+		c = shift_mod ? '$' : '4';
 		break;
 	case 0x06:
-		print_char('5');
+		c = shift_mod ? '%' : '5';
 		break;
 	case 0x07:
-		print_char('6');
+		c = shift_mod ? '^' : '6';
 		break;
 	case 0x08:
-		print_char('7');
+		c = shift_mod ? '&' : '7';
 		break;
 	case 0x09:
-		print_char('8');
+		c = shift_mod ? '*' : '8';
 		break;
 	case 0x0a:
-		print_char('9');
+		c = shift_mod ? '(' : '9';
 		break;
 	case 0x39:
-		print_char(' ');
+		c = ' ';
 		break;
 	case 0x29:
-		print_char('`');
+		c = shift_mod ? '~' : '`';
 		break;
 	case 0x0c:
-		print_char('-');
+		c = shift_mod ? '_' : '-';
 		break;
 	case 0x0d:
-		print_char('=');
+		c = shift_mod ? '+' : '=';
 		break;
 	case 0x2b:
-		print_char('\\');
+		c = shift_mod ? '|' : '\\';
 		break;
 	case 0x1a:
-		print_char('[');
+		c = shift_mod ? '{' : '[';
 		break;
 	case 0x1b:
-		print_char(']');
+		c = shift_mod ? '}' : ']';
 		break;
 	case 0x27:
-		print_char(';');
+		c = shift_mod ? ':' : ';';
 		break;
 	case 0x28:
-		print_char('\'');
+		c = shift_mod ? '"' : '\'';
 		break;
 	case 0x33:
-		print_char(',');
+		c = shift_mod ? '<' : ',';
 		break;
 	case 0x34:
-		print_char('.');
+		c = shift_mod ? '>' : '.';
 		break;
 	case 0x35:
-		print_char('/');
+		c = shift_mod ? '?' : '/';
 		break;
 	case 0x0e:
+		char_input = 0;
 		bksp = 1;
 		print_char('\0');
 		bksp = 0;
 		break;
 	default:
+		char_input = 0;
 		break;
+	}
+
+	if (char_input) {
+		print_char(isalpha(c) ? c - (shift_mod * 32) : c);
 	}
 }
