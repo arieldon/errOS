@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "io.h"
+
 enum VGA {
 	VGA_MEMORY_START = 0xb8000,
 	VGA_SCREEN_WIDTH = 80,
@@ -12,10 +14,17 @@ enum VGA {
 	VGA_COLOR_WHITE = 15,
 };
 
-extern int bksp;
+enum CURSOR {
+	CURSOR_COMMAND_PORT = 0x03d4,
+	CURSOR_DATA_PORT = 0x03d5,
+};
 
+void bksp(void);
 void clear(void);
 void print(char *str);
-void print_char(char c);
+
+void enable_cursor(void);
+void update_cursor(uint16_t location);
+uint16_t locate_cursor(void);
 
 #endif
