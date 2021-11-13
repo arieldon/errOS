@@ -1,4 +1,4 @@
-#include "vga.h"
+#include "screen.h"
 
 static inline uint16_t
 fill_cell(uint8_t c)

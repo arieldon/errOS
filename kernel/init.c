@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "idt.h"
-#include "vga.h"
+#include "screen.h"
 
 void
 main(void)

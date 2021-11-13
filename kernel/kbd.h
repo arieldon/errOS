@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "vga.h"
+#include "screen.h"
 
 #define isalpha(c)	((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
 

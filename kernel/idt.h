@@ -5,7 +5,7 @@
 
 #include "io.h"
 #include "kbd.h"
-#include "vga.h"
+#include "screen.h"
 
 enum PIC {
 	PIC_MASTER_COMMAND_PORT = 0x20,
