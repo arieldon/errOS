@@ -22,6 +22,7 @@ enum CURSOR {
 void bksp(void);
 void clear(void);
 void print(char *str);
+void printh(uint32_t hex);
 
 void enable_cursor(void);
 void update_cursor(uint16_t location);

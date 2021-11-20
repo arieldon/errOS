@@ -32,6 +32,18 @@ print(char *str)
 }
 
 void
+printh(uint32_t hex)
+{
+	char *str = "0x00000000";
+
+	for (int n = 9; hex > 0; hex /= 16, --n) {
+		str[n] = 48 + (hex % 16);
+	}
+
+	print(str);
+}
+
+void
 bksp(void)
 {
 	uint16_t *screen = (uint16_t *)VGA_MEMORY_START;
