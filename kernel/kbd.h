@@ -7,7 +7,8 @@
 
 #define isalpha(c)	((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
 #define PROMPT_DISPLAY	"> "
-#define PROMPT_REPEAT	"repeat "
+#define PROMPT_PRINT	"print "
+#define PROMPT_CLEAR	"clear"
 
 enum KBD {
 	  KBD_INPUT_PORT = 0x60,
@@ -15,8 +16,15 @@ enum KBD {
 };
 
 enum PROMPT {
-	PROMPT_LENGTH = 2,
-	PROMPT_REPEAT_LENGTH = 7,
+	PROMPT_LEN = 2,
+	PROMPT_PRINT_LEN = 6,
+	PROMPT_CLEAR_LEN = 5,
+};
+
+enum CMD_TYPE {
+	CMD_NONE,
+	CMD_CLEAR,
+	CMD_PRINT,
 };
 
 extern int buflen;

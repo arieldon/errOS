@@ -177,28 +177,54 @@ write_kbd_input(uint8_t scan_code)
 	case 0x1c: {	/* Detect enter key press. */
 		char_input = 0;
 
-		/*
-		 * Move cursor to beginning of next line and flush input buffer
-		 * on command `repeat`.
-		 */
-		if (buflen >= PROMPT_REPEAT_LENGTH) {
-			int output = 1;
+		enum CMD_TYPE cmd = CMD_CLEAR;
 
-			char *repeat = PROMPT_REPEAT;
-			for (uint8_t i = 0; i < PROMPT_REPEAT_LENGTH; ++i) {
-				if (kbd_buffer[i] != repeat[i]) {
-					output = 0;
+		char *cmdcmp = PROMPT_CLEAR;
+		if (buflen >= PROMPT_CLEAR_LEN) {
+			for (uint8_t i = 0; i < PROMPT_CLEAR_LEN; ++i) {
+				if (kbd_buffer[i] != cmdcmp[i]) {
+					cmd = CMD_NONE;
 					break;
 				}
 			}
+		} else {
+			cmd = CMD_NONE;
+		}
 
-			if (output) {
-				update_cursor(
-					locate_cursor() + VGA_SCREEN_WIDTH
-						- buflen - PROMPT_LENGTH
-				);
-				print(kbd_buffer + PROMPT_REPEAT_LENGTH);
+		if (cmd == CMD_NONE && buflen >= PROMPT_PRINT_LEN) {
+			cmd = CMD_PRINT;
+			cmdcmp = PROMPT_PRINT;
+			for (uint8_t i = 0; i < PROMPT_PRINT_LEN; ++i) {
+				if (kbd_buffer[i] != cmdcmp[i]) {
+					cmd = CMD_NONE;
+					break;
+				}
 			}
+		}
+
+		switch (cmd) {
+		case CMD_CLEAR:
+			clear();
+			update_cursor(0);
+			break;
+		case CMD_PRINT:
+			update_cursor(
+				locate_cursor() + VGA_SCREEN_WIDTH
+					- buflen - PROMPT_LEN
+			);
+			print(kbd_buffer + PROMPT_PRINT_LEN);
+		case CMD_NONE: {
+			uint16_t cur = locate_cursor();
+			uint16_t width = cur % VGA_SCREEN_WIDTH;
+			uint16_t height = cur / VGA_SCREEN_WIDTH;
+			if (height + 1 >= VGA_SCREEN_HEIGHT) {
+				clear();
+				update_cursor(0);
+			} else {
+				update_cursor(cur + (VGA_SCREEN_WIDTH - width));
+			}
+			break;
+		}
 		}
 
 		/* Clear input buffer. */
@@ -206,11 +232,6 @@ write_kbd_input(uint8_t scan_code)
 			kbd_buffer[i] = 0;
 		}
 		buflen = 0;
-
-		/* Move cursor to next line. */
-		uint16_t cur = locate_cursor();
-		uint16_t height = cur % VGA_SCREEN_WIDTH;
-		update_cursor(cur + (VGA_SCREEN_WIDTH - height));
 
 		print(PROMPT_DISPLAY);
 		break;
