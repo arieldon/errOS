@@ -1,5 +1,8 @@
 #include "kbd.h"
 
+int buflen = 0;
+char kbd_buffer[KBD_BUFFER_MAX + 1] = {0};
+
 static int shift_mod;
 
 void
@@ -164,17 +167,62 @@ write_kbd_input(uint8_t scan_code)
 	case 0x35:
 		c[0] = shift_mod ? '?' : '/';
 		break;
-	case 0x0e:
+	case 0x0e:	/* Detect backspace key press. */
 		char_input = 0;
-		bksp();
+		if (buflen > 0) {
+			bksp();
+			kbd_buffer[--buflen] = 0;
+		}
 		break;
+	case 0x1c: {	/* Detect enter key press. */
+		char_input = 0;
+
+		/*
+		 * Move cursor to beginning of next line and flush input buffer
+		 * on command `repeat`.
+		 */
+		if (buflen >= PROMPT_REPEAT_LENGTH) {
+			int output = 1;
+
+			char *repeat = PROMPT_REPEAT;
+			for (uint8_t i = 0; i < PROMPT_REPEAT_LENGTH; ++i) {
+				if (kbd_buffer[i] != repeat[i]) {
+					output = 0;
+					break;
+				}
+			}
+
+			if (output) {
+				update_cursor(
+					locate_cursor() + VGA_SCREEN_WIDTH
+						- buflen - PROMPT_LENGTH
+				);
+				print(kbd_buffer + PROMPT_REPEAT_LENGTH);
+			}
+		}
+
+		/* Clear input buffer. */
+		for (int i = 0; i < buflen; ++i) {
+			kbd_buffer[i] = 0;
+		}
+		buflen = 0;
+
+		/* Move cursor to next line. */
+		uint16_t cur = locate_cursor();
+		uint16_t height = cur % VGA_SCREEN_WIDTH;
+		update_cursor(cur + (VGA_SCREEN_WIDTH - height));
+
+		print(PROMPT_DISPLAY);
+		break;
+	}
 	default:	/* Catch all unsupported keys. */
 		char_input = 0;
 		break;
 	}
 
-	if (char_input) {
+	if (char_input && buflen < KBD_BUFFER_MAX) {
 		c[0] = isalpha(c[0]) ? c[0] - (shift_mod * 32) : c[0];
+		kbd_buffer[buflen++] = c[0];
 		print(c);
 	}
 }
